@@ -8,7 +8,7 @@
  */
 const myReact = (function AlexReact() {
     let state: any[] = [];
-    let effects: (() => any)[] = []
+    let effects: [(() => any), []][] = []
     let stateIndex = 0;
     let effectsIndex = 0;
 
@@ -17,7 +17,8 @@ const myReact = (function AlexReact() {
             let comp = Component(); // instantiate a new component, which will run useState() again
             comp.render();
             for (let i = 0; i < effects.length; i++) {
-                effects[i](); // call effect
+                // todo: add check to see if dependencies have changed
+                effects[i][0](); // call effect
             }
             stateIndex = 0;
             effectsIndex = 0;
@@ -31,8 +32,8 @@ const myReact = (function AlexReact() {
             }
             return [state[stateIndex++], setState];
         },
-        useEffect(callback: () => any) {
-            effects[effectsIndex++] = callback;
+        useEffect(callback: () => any, dependencies: []) {
+            effects[effectsIndex++] = [callback, dependencies];
         },
         useRef(initialState: any) {
             /**
@@ -44,7 +45,24 @@ const myReact = (function AlexReact() {
         useReducer<R>(reducer: (state: any, action: any) => R, initialArg: R) {
             let [currentState, setReducerState] = this.useState(initialArg)
             return [currentState, (dispatchedArgument: any) => { setReducerState(reducer(currentState, dispatchedArgument)) }]
+        },
+        useMemo(fn: () => any, dependencies: any[]) {
+            let [currentDependencies, setdependencies] = this.useState(null);
+            let [currentState, setState] = this.useState(null);
+
+            for (let i = 0; i < dependencies.length; i++) {
+                if (currentDependencies === null || (currentDependencies[i] !== dependencies[i])) {
+                    setState(fn());
+                    setdependencies([...dependencies])
+                    break;
+                };
+            }
+            return currentState;
+        },
+        useCallback(callback: () => any, dependencies: any[]) {
+            return this.useMemo(() => callback, dependencies);
         }
+
     }
 })(); // singleton
 
@@ -67,11 +85,17 @@ function reducer(state: any, action: any) {
 function MyComponent() {
     let [count, setCount] = myReact.useState(0); // uses the singleton object to create state
     let [name, setName] = myReact.useState('Alex'); // uses the singleton object to create state
-    // myReact.useEffect(() => {
-    //     setTimeout(() => console.log(`Count is ${count} and name is ${name}`), 2000);
-    // })
+    myReact.useEffect(() => {
+        setTimeout(() => console.log(`Count is ${count} and name is ${name}`), 2000);
+    }, [])
+
     const ref = myReact.useRef('hello world');
     const [state, dispatch] = myReact.useReducer(reducer, { count: 0 });
+
+    const memoisedValue = myReact.useMemo(() => { console.log('possibly an expensive computation'); return 1 }, [count])
+    const memorisedCallback = myReact.useCallback(() => {
+        console.log('doing something');
+    }, []);
 
     return {
         render: () => console.log(count, name, state),
