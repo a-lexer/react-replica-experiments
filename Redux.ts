@@ -3,10 +3,10 @@
  */
 
 type State = any;
-type Action = Object;
+type Action = { [val: string]: string };
 type Reducer = (arg0: State, arg1: Action) => State;
 type Dispatch = (arg0: Action) => State;
-interface Listener { notify: () => any };
+interface Listener { notify: (state: State) => any };
 
 type Store = {
   dispatch: Dispatch
@@ -40,7 +40,7 @@ const createStore = (reducer: Reducer, initialState: State) => {
       state = reducer(state, action);
       let _listeners = Object.freeze([...listeners]);
       for (let i = 0; i < _listeners.length; i++) {
-        _listeners[i].notify();
+        _listeners[i].notify(Object.freeze(state));
       }
     },
     subscribe<L extends Listener>(listener: L): any {
@@ -56,7 +56,7 @@ const createStore = (reducer: Reducer, initialState: State) => {
  */
 
 
-function todos(state = [], action: Action) {
+function todos(state = [] as any[], action: Action) {
   switch (action.type) {
     case 'ADD_TODO':
       return state.concat([action.text])
@@ -66,9 +66,21 @@ function todos(state = [], action: Action) {
 }
 
 const store = createStore(todos, ['Use Redux'])
+store.subscribe({
+  notify(currentState: State) {
+    console.log('current state is: ', currentState);
+    if (currentState.length === 2) {
+      store.dispatch({
+        type: 'ADD_TODO',
+        text: 'Add this too I guess'
+      })
+    }
+  }
+})
 store.dispatch({
   type: 'ADD_TODO',
   text: 'Read the docs'
 })
 console.log(store.getState())
+
 
