@@ -120,3 +120,5 @@ App.click()
 App = myReact.render(MyComponent);
 App.setName()
 App = myReact.render(MyComponent);
+App.click()
+App = myReact.render(MyComponent);
