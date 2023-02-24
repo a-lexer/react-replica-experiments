@@ -100,7 +100,7 @@ function MyComponent() {
     return {
         render: () => console.log(count, name, state),
         click: () => {
-            setCount(count + 1); ref.current = 'lmao'; dispatch({ type: 'increment' })
+            setCount(count + 1); ref.current = 'example'; dispatch({ type: 'increment' })
         },
         setName: () => { setName(name + ' :) '); ref.current = 'wholesome'; }
     }
